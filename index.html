@@ -212,9 +212,22 @@
     </div>
   </section>
 
+  <!-- PROBABILIDADES -->
+  <section id="probs">
+    <div class="eyebrow">03 · Pronóstico probabilístico</div>
+    <h2>Probabilidad estadística de ocurrencia</h2>
+    <div class="card">
+      <p style="margin-bottom:16px">Estimación de la probabilidad de que ocurra <strong>al menos un sismo</strong> de cada magnitud en el área de análisis (radio 400 km de Lima), extrapolando la relación Gutenberg–Richter ajustada a los datos recientes bajo un modelo de Poisson: <span class="mono" style="font-size:13px">P = 1 − e<sup>−λt</sup></span>.</p>
+      <div class="grid3" id="probGrid"></div>
+      <p style="margin-top:16px;font-size:13px;color:var(--muted)">
+        ⚠ Estas cifras describen la <em>frecuencia estadística</em> de la zona, no una predicción de un evento específico. La extrapolación a M≥7 desde un catálogo de 90 días tiene alta incertidumbre. El megasismo de la brecha (M8.5+) no se puede estimar con esta ventana: su probabilidad es de largo plazo y crece con la energía acumulada desde 1746, pero su fecha es incognoscible.
+      </p>
+    </div>
+  </section>
+
   <!-- BRECHA SÍSMICA -->
   <section id="brecha">
-    <div class="eyebrow">03 · Historial y geofísica</div>
+    <div class="eyebrow">04 · Historial y geofísica</div>
     <h2>La brecha sísmica frente a Lima</h2>
     <div class="card">
       <p>Frente a la costa central del Perú, la placa de Nazca subduce bajo la Sudamericana a ~6–7 cm/año. El último megasismo que rompió completamente el segmento frente a Lima fue el de <strong>1746 (M≈8.8)</strong>, que destruyó Lima y generó un tsunami que arrasó el Callao. Los sismos de 1940, 1966 y 1974 (M≈8) liberaron energía solo parcialmente. El Instituto Geofísico del Perú estima que este segmento ha acumulado deformación suficiente para un evento de <strong>M 8.5–8.8</strong>, sin que sea posible saber cuándo ocurrirá.</p>
@@ -229,7 +242,7 @@
 
   <!-- DIAGNÓSTICO IA -->
   <section id="diagnostico">
-    <div class="eyebrow">04 · Análisis con IA</div>
+    <div class="eyebrow">05 · Análisis con IA</div>
     <h2>Diagnóstico sofisticado</h2>
     <div class="card">
       <p style="margin-bottom:16px">Genera un diagnóstico integral con Claude: cruza los datos en vivo de esta página con búsqueda de noticias recientes (IGP, INDECI, prensa) y el contexto geofísico, y produce una evaluación estructurada con recomendaciones de preparación.</p>
@@ -305,6 +318,7 @@ function render(){
   renderTable();
   drawTimeChart();
   drawGR();
+  drawProbs();
   drawTimeline();
   drawDrum();
   computeIndex(maxM, n, meanDepth);
@@ -410,6 +424,35 @@ function drawGR(){
   const b=(-slope).toFixed(2);
   document.getElementById('bval').textContent=b;
   window.__BVAL=b;
+  window.__GR={a:inter,b:-slope};
+}
+
+/* ---------- Probabilidades (G-R + Poisson) ---------- */
+function drawProbs(){
+  if(!window.__GR)return;
+  const {a,b}=window.__GR;
+  // N esperado en 90 días para magnitud >= M, según el ajuste
+  const N90=M=>Math.pow(10,a-b*M);
+  const P=(M,days)=>1-Math.exp(-N90(M)*days/90);
+  const rows=[
+    {M:5.0,desc:'Perceptible fuerte, daños menores'},
+    {M:6.0,desc:'Daños moderados en zonas vulnerables'},
+    {M:7.0,desc:'Destructivo · extrapolación incierta'}
+  ];
+  const pct=v=>v>=0.995?'>99':(v*100).toFixed(v<0.01?1:0);
+  document.getElementById('probGrid').innerHTML=rows.map(r=>{
+    const p30=P(r.M,30),p365=P(r.M,365);
+    const col=r.M>=7?'var(--alert)':r.M>=6?'var(--amber)':'var(--ocean)';
+    return `<div class="stat">
+      <div class="lab" style="margin-bottom:6px;color:var(--ink)">M ≥ ${r.M.toFixed(1)}</div>
+      <div class="big mono" style="color:${col}">${pct(p365)}%</div>
+      <div class="lab">próximos 12 meses</div>
+      <div class="bar" style="margin-top:10px"><i style="width:${Math.min(p365*100,100)}%;background:${col}"></i></div>
+      <div class="mono" style="font-size:12px;margin-top:8px">30 días: ${pct(p30)}%</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">${r.desc}</div>
+    </div>`;
+  }).join('');
+  window.__PROBS=Object.fromEntries(rows.map(r=>[`M${r.M}`,{p30:+(P(r.M,30)*100).toFixed(1),p365:+(P(r.M,365)*100).toFixed(1)}]));
 }
 
 /* ---------- Timeline histórica ---------- */
@@ -474,6 +517,7 @@ async function runDiagnosis(){
     prof_media_km:Math.round(EVENTS.reduce((s,e)=>s+e.depth,0)/EVENTS.length),
     b_value:window.__BVAL,
     indice_contexto:window.__CTX_INDEX,
+    probabilidades_poisson:window.__PROBS,
     brecha:'Última ruptura total del segmento Lima: 1746 (M~8.8). IGP estima potencial M8.5–8.8 acumulado. Convergencia Nazca 6–7 cm/año.',
     ultimos_eventos:EVENTS.slice(0,8).map(e=>`${e.t.toISOString().slice(0,10)} M${e.mag} ${Math.round(e.depth)}km ${e.place}`)
   };
@@ -502,10 +546,33 @@ ${JSON.stringify(resumen,null,2)}`;
       ? text.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
       : 'No se pudo generar el diagnóstico. Intenta de nuevo.';
   }catch(e){
-    out.textContent='Error al conectar con el servicio de análisis: '+e.message;
+    out.innerHTML = localDiagnosis(resumen) +
+      `<p style="margin-top:14px;font-size:12.5px;color:var(--muted)">ℹ Diagnóstico generado por el motor local de la app. El análisis con IA (que además busca noticias recientes) solo está disponible cuando la app se ejecuta dentro de Claude.ai.</p>`;
   }
   sp.style.display='none';out.style.display='block';btn.disabled=false;
   btn.textContent='Regenerar diagnóstico';
+}
+
+/* ---------- Diagnóstico local (sin IA) ---------- */
+function localDiagnosis(r){
+  const ci=r.indice_contexto||{}, pr=r.probabilidades_poisson||{};
+  const rate=(r.total_eventos/90*30).toFixed(1);
+  const bnum=parseFloat(r.b_value);
+  const bTxt = isNaN(bnum) ? '' :
+    bnum<0.8 ? `El b-value estimado (${r.b_value}) es bajo: proporcionalmente hay más sismos grandes que pequeños en el catálogo reciente, lo que suele asociarse a zonas de mayor acumulación de esfuerzos (con la cautela de una ventana corta).` :
+    bnum>1.2 ? `El b-value estimado (${r.b_value}) es alto: domina la sismicidad pequeña, patrón típico de liberación gradual o enjambres.` :
+    `El b-value estimado (${r.b_value}) está en el rango típico (~1.0), consistente con una sismicidad de fondo normal para una zona de subducción.`;
+  const p6=pr['M6']?`${pr['M6'].p365}%`:'—', p5=pr['M5']?`${pr['M5'].p365}%`:'—';
+  return `
+<h3>Situación actual</h3>
+<p>En los últimos 90 días se registraron <strong>${r.total_eventos} sismos M≥3.5</strong> en un radio de 400 km de Lima (≈${rate} por mes), con magnitud máxima <strong>M${r.mag_max}</strong> y profundidad media de ${r.prof_media_km} km. El índice de contexto de la app es <strong>${ci.idx}/100 (${ci.nivel})</strong>, dominado por la energía acumulada en la brecha sísmica.</p>
+<h3>Lectura estadística y geofísica</h3>
+<p>${bTxt} Bajo el modelo de Poisson, la probabilidad de al menos un M≥5 en 12 meses es ~${p5}, y de un M≥6, ~${p6}. Estas cifras reflejan la frecuencia de la zona, no un evento específico. El factor estructural sigue siendo la brecha: ${NOW_YEAR-1746} años sin ruptura total del segmento frente a Lima, con potencial estimado de M8.5+ según el IGP.</p>
+<h3>Escenario de riesgo para Lima</h3>
+<p>El riesgo no depende solo de la magnitud sino del suelo y la construcción: distritos sobre suelos blandos (p. ej. zonas de Villa El Salvador, Callao, La Molina) amplifican las ondas, y la autoconstrucción informal concentra la vulnerabilidad. Un sismo de la brecha implicaría además riesgo de tsunami en la franja costera, con minutos para evacuar.</p>
+<h3>Recomendaciones de preparación</h3>
+<p>Mochila de emergencia y agua para 72 h · plan familiar de encuentro · asegurar muebles altos · identificar zonas seguras internas y rutas de evacuación (verticales si vives cerca al mar) · activar la alerta SASPe y seguir al IGP e INDECI · si tu vivienda es autoconstruida, evaluación estructural.</p>
+<p><strong>Ningún índice o estadística permite predecir la fecha de un terremoto.</strong> El valor de este diagnóstico está en dimensionar el contexto y prepararse.</p>`;
 }
 
 loadUSGS();
