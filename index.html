@@ -119,14 +119,14 @@
   .src{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:8px}
 
   /* ---------- TIMELINE BRECHA ---------- */
-  .timeline{position:relative;height:120px;margin:26px 6px 6px}
+  .timeline{position:relative;height:140px;margin:26px 6px 6px}
   .tl-axis{position:absolute;left:0;right:0;top:70px;height:2px;background:var(--ink)}
-  .tl-ev{position:absolute;top:38px;transform:translateX(-50%);text-align:center}
+  .tl-ev{position:absolute;top:36px;transform:translateX(-50%);text-align:center}
   .tl-ev .tick{width:2px;height:34px;background:var(--alert);margin:0 auto}
   .tl-ev .yy{font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:4px}
   .tl-ev .mm{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)}
   .tl-gap{position:absolute;top:70px;height:14px;background:repeating-linear-gradient(45deg,var(--alert) 0 6px,transparent 6px 12px);opacity:.55}
-  .tl-gaplab{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--alert);top:92px}
+  .tl-gaplab{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--alert);top:108px}
 
   /* ---------- DIAGNÓSTICO IA ---------- */
   .diag-btn{
@@ -219,6 +219,10 @@
     <div class="card">
       <p style="margin-bottom:16px">Estimación de la probabilidad de que ocurra <strong>al menos un sismo</strong> de cada magnitud en el área de análisis (radio 400 km de Lima), extrapolando la relación Gutenberg–Richter ajustada a los datos recientes bajo un modelo de Poisson: <span class="mono" style="font-size:13px">P = 1 − e<sup>−λt</sup></span>.</p>
       <div class="grid3" id="probGrid"></div>
+      <div style="border-top:1.5px solid var(--grid);margin-top:20px;padding-top:18px">
+        <p style="margin-bottom:14px"><strong>Recurrencia histórica (1555–hoy).</strong> Con 470 años de catálogo documental de la zona de Lima (NOAA/USGS), la probabilidad de largo plazo se estima desde los intervalos reales entre grandes sismos:</p>
+        <div class="grid3" id="recurGrid"></div>
+      </div>
       <p style="margin-top:16px;font-size:13px;color:var(--muted)">
         ⚠ Estas cifras describen la <em>frecuencia estadística</em> de la zona, no una predicción de un evento específico. La extrapolación a M≥7 desde un catálogo de 90 días tiene alta incertidumbre. El megasismo de la brecha (M8.5+) no se puede estimar con esta ventana: su probabilidad es de largo plazo y crece con la energía acumulada desde 1746, pero su fecha es incognoscible.
       </p>
@@ -232,6 +236,7 @@
     <div class="card">
       <p>Frente a la costa central del Perú, la placa de Nazca subduce bajo la Sudamericana a ~6–7 cm/año. El último megasismo que rompió completamente el segmento frente a Lima fue el de <strong>1746 (M≈8.8)</strong>, que destruyó Lima y generó un tsunami que arrasó el Callao. Los sismos de 1940, 1966 y 1974 (M≈8) liberaron energía solo parcialmente. El Instituto Geofísico del Perú estima que este segmento ha acumulado deformación suficiente para un evento de <strong>M 8.5–8.8</strong>, sin que sea posible saber cuándo ocurrirá.</p>
       <div class="timeline" id="tl" aria-label="Línea de tiempo de grandes sismos frente a Lima"></div>
+      <p class="src" style="margin-top:2px">Marcas: sismos M≥7.5 del catálogo documental (NOAA/NCEI + USGS, 1555–2025). Los más letales de la zona: 1657 y 1654 (~11 000 muertes c/u), 2007 Pisco (514), 1940 (179).</p>
       <div class="grid3" style="margin-top:22px">
         <div class="stat"><div class="big mono" id="gapYears">–</div><div class="lab">años desde la ruptura total (1746)</div></div>
         <div class="stat"><div class="big mono">6–7</div><div class="lab">cm/año de convergencia de placas</div></div>
@@ -269,6 +274,9 @@ const HIST = [
   {y:2021,m:6.0,note:'Mala'}
 ];
 const NOW_YEAR = new Date().getFullYear();
+/* Catálogo histórico zona Lima (radio ~450 km), 1555–2025.
+   Fuente: NOAA/NCEI Significant Earthquake DB + USGS ComCat (catálogo documental v3, 2026-08-15) */
+const HIST_CAT = [{"y":1555,"m":8.4,"loc":"PERU"},{"y":1578,"m":null,"loc":"LIMA,CALLAO"},{"y":1582,"m":7.8,"loc":"PERU"},{"y":1584,"m":8.4,"loc":"PERU"},{"y":1586,"m":8.5,"loc":"LIMA","d":22},{"y":1594,"m":null,"loc":"ICA","d":40},{"y":1609,"m":8.6,"loc":"PERU"},{"y":1630,"m":8.1,"loc":"LIMA"},{"y":1647,"m":null,"loc":"PERU"},{"y":1650,"m":8.1,"loc":"CUZCO,COLLAO,LIMA; BOLIVIA:  SICASICA"},{"y":1654,"m":null,"loc":"LIMA; CHILE","d":11000},{"y":1655,"m":7.7,"loc":"LIMA, CALLAO"},{"y":1656,"m":null,"loc":"PERU","d":11000},{"y":1657,"m":null,"loc":"LIMA,CALLAO","d":11000},{"y":1664,"m":7.3,"loc":"ICA, PISCO","d":400},{"y":1678,"m":8.4,"loc":"LIMA,SALINAS-HUAURA,LIMA,CALLAO,CHANCAY"},{"y":1687,"m":8.5,"loc":"LIMA","d":5000},{"y":1699,"m":7.8,"loc":"LIMA"},{"y":1716,"m":8.6,"loc":"PERU"},{"y":1725,"m":7.7,"loc":"TRUJILLO, ANCASH, LIMA","d":1500},{"y":1725,"m":null,"loc":"CALLAO"},{"y":1746,"m":8.0,"loc":"LIMA, CALLAO","d":1141},{"y":1799,"m":null,"loc":"LIMA, CALLAO"},{"y":1806,"m":7.5,"loc":"LIMA"},{"y":1813,"m":null,"loc":"ICA","d":32},{"y":1828,"m":8.3,"loc":"LIMA, CALLAO","d":30},{"y":1840,"m":null,"loc":"LIMA"},{"y":1846,"m":7.9,"loc":"PERU"},{"y":1847,"m":null,"loc":"CALLAO"},{"y":1852,"m":null,"loc":"PERU"},{"y":1860,"m":null,"loc":"LIMA, CALLAO"},{"y":1861,"m":null,"loc":"PERU"},{"y":1865,"m":null,"loc":"PERU"},{"y":1865,"m":null,"loc":"CALLAO"},{"y":1868,"m":null,"loc":"LIMA, AREQUIPA, ARICA"},{"y":1869,"m":null,"loc":"LIMA"},{"y":1871,"m":null,"loc":"CHINCHA ISLANDS"},{"y":1871,"m":null,"loc":"CALLAO"},{"y":1877,"m":null,"loc":"CALLAO"},{"y":1878,"m":null,"loc":"CALLAO"},{"y":1897,"m":7.7,"loc":"PERU"},{"y":1907,"m":7.6,"loc":"PERU"},{"y":1907,"m":null,"loc":"PERU"},{"y":1908,"m":8.2,"loc":"OFF COAST"},{"y":1914,"m":null,"loc":"CALLAO"},{"y":1932,"m":6.8,"loc":"PERU"},{"y":1937,"m":6.2,"loc":"HUANCABAMBA,OXAPAMPA,EL PROGRESO,SAN DAVID","d":15},{"y":1940,"m":8.2,"loc":"PERU","d":179},{"y":1942,"m":8.2,"loc":"ICA, NAZCA","d":30},{"y":1946,"m":7.0,"loc":"PISCO"},{"y":1946,"m":7.3,"loc":"JOCAIBAMBA,CERRO ANGASCHAJ,CERRO SILLAPATA","d":800},{"y":1947,"m":7.3,"loc":"SATIPO,ANDAMARCA,ACOBAMBA,LA MERCED,VICTOC","d":233},{"y":1948,"m":6.8,"loc":"CANETE","d":4},{"y":1950,"m":7.0,"loc":"ICA,CHIMBOTE,HUARAZ,CAJAMARCA,CUZCO,MOQUEGUA","d":4},{"y":1953,"m":5.5,"loc":"LIMA"},{"y":1959,"m":null,"loc":"AYACUCHO,POMABAMBA,MOYOBAMBA,HUAHUAPUQUIO","d":7},{"y":1960,"m":7.0,"loc":"LIMA,NAZCA,ICA,HUANCAVELIC,PALPA,HUAITARA","d":63},{"y":1962,"m":6.3,"loc":"CASMA,HUARAZ,QUIRUVILCA,TRUJILLO","d":9},{"y":1963,"m":7.0,"loc":"HUAYLLACAYAN,CAJACAY,MALYAS,MALVAS,HUARAZ","d":1},{"y":1966,"m":8.1,"loc":"LIMA,HUACHO,HUAURA, CHANCAY,SUPE,SAN NICOLAS","d":110},{"y":1967,"m":7.0,"loc":"OFF COAST"},{"y":1969,"m":5.9,"loc":"LAMPA-JUNIN,HUAYTAPALLANA"},{"y":1969,"m":6.2,"loc":"HUAYTAPALLANA, LAMPA, CHILIFRUTA","d":150},{"y":1970,"m":5.4,"loc":"PANAO,CHACLLA,QUERO,AYLLAMARCA,LA LINDA","d":12},{"y":1970,"m":7.9,"loc":"NORTHERN, PISCO, CHICLAYO","d":66794},{"y":1974,"m":6.3,"loc":"LIMA, YAUYOS","d":10},{"y":1974,"m":8.1,"loc":"LIMA, CALLAO","d":78},{"y":1980,"m":4.9,"loc":"S CENTRAL","d":7},{"y":1981,"m":4.8,"loc":"AYACUCHO","d":8},{"y":1981,"m":5.2,"loc":"CENTRAL","d":10},{"y":1982,"m":6.1,"loc":"COAST, LUNAHUANA, LIMA, HUANCAYO","d":3},{"y":1985,"m":6.1,"loc":"COAST:  CHIMBOTE"},{"y":1986,"m":5.3,"loc":"HUARMEY, CASMA, HUARAX, CHIMBOTE","d":1},{"y":1987,"m":5.1,"loc":"SANTAOG DE CHUCO, TRUJILLO, CHIMBOTE","d":3},{"y":1993,"m":6.3,"loc":"LIMA","d":6},{"y":1996,"m":7.5,"loc":"NORTHERN:  CHIMBOTE, CALLAO"},{"y":1996,"m":7.7,"loc":"CHINCHA ALTA, ACARI, NAZCA, MARCONA","d":14},{"y":1999,"m":4.4,"loc":"CHUSCHI, CANGALLo, HUANCAPI"},{"y":2006,"m":6.7,"loc":"CENTRAL"},{"y":2007,"m":8.0,"loc":"ICA, PISCO, LIMA","d":514},{"y":2008,"m":5.3,"loc":"OFF COAST"},{"y":2008,"m":5.5,"loc":"CENTRAL:  OXAPAMPA, HUANCABAMBA"},{"y":2009,"m":4.6,"loc":"PACCHA"},{"y":2011,"m":6.9,"loc":"SAN VICENTE DE CANETE","d":1},{"y":2012,"m":6.4,"loc":"ICA"},{"y":2020,"m":4.5,"loc":"COAST:  CHIMBOTE","d":1},{"y":2021,"m":5.8,"loc":"CANETE: MALA","d":1},{"y":2022,"m":5.4,"loc":"LIMA, CALLAO, CHILCA","d":2},{"y":2024,"m":4.2,"loc":"AYACUCHO"},{"y":2025,"m":5.6,"loc":"LIMA, CALLAO","d":1}];
 let EVENTS = [];      // eventos USGS
 let usingFallback = false;
 
@@ -319,6 +327,7 @@ function render(){
   drawTimeChart();
   drawGR();
   drawProbs();
+  drawRecurrence();
   drawTimeline();
   drawDrum();
   computeIndex(maxM, n, meanDepth);
@@ -428,6 +437,25 @@ function drawGR(){
 }
 
 /* ---------- Probabilidades (G-R + Poisson) ---------- */
+function drawRecurrence(){
+  const big=HIST_CAT.filter(e=>e.m!=null&&e.m>=7.5).map(e=>e.y).sort((a,b)=>a-b);
+  const iv=big.slice(1).map((y,i)=>y-big[i]);
+  const mean=iv.reduce((s,v)=>s+v,0)/iv.length;
+  const last=big[big.length-1];
+  const elapsed=NOW_YEAR-last;
+  const P=t=>1-Math.exp(-t/mean);
+  const p10=P(10),p30=P(30);
+  const pct=v=>(v*100).toFixed(0);
+  document.getElementById('recurGrid').innerHTML=`
+    <div class="stat"><div class="big mono">${mean.toFixed(0)} <span style="font-size:16px">años</span></div>
+      <div class="lab">intervalo medio entre M≥7.5 (n=${big.length} desde ${big[0]})</div></div>
+    <div class="stat"><div class="big mono" style="color:${elapsed>mean?'var(--amber)':'var(--ink)'}">${elapsed} <span style="font-size:16px">años</span></div>
+      <div class="lab">transcurridos desde el último M≥7.5 (${last}, Pisco)${elapsed>mean?' · ya supera el promedio':''}</div></div>
+    <div class="stat"><div class="big mono" style="color:var(--alert)">${pct(p10)}%</div>
+      <div class="lab">prob. de un M≥7.5 en 10 años (Poisson histórica) · 30 años: ${pct(p30)}%</div></div>`;
+  window.__RECUR={intervalo_medio_anios:+mean.toFixed(1),ultimo:last,transcurridos:elapsed,p10:+(p10*100).toFixed(0),p30:+(p30*100).toFixed(0)};
+}
+
 function drawProbs(){
   if(!window.__GR)return;
   const {a,b}=window.__GR;
@@ -458,11 +486,14 @@ function drawProbs(){
 /* ---------- Timeline histórica ---------- */
 function drawTimeline(){
   const tl=document.getElementById('tl');
-  const y0=1720,y1=NOW_YEAR+10;
+  const y0=1540,y1=NOW_YEAR+15;
   const px=y=>((y-y0)/(y1-y0)*100).toFixed(2)+'%';
+  const evs=HIST_CAT.filter(e=>e.m!=null&&e.m>=7.5);
+  const labeled=evs.filter(e=>e.m>=8.3||e.y===1746||e.y>=1940);
   tl.innerHTML=`<div class="tl-axis"></div>`+
-    HIST.map(h=>`<div class="tl-ev" style="left:${px(h.y)}">
-      <div class="tick" style="height:${10+ (h.m-5.5)*9}px"></div>
+    evs.map(h=>`<div class="tl-ev" style="left:${px(h.y)}">
+      <div class="tick" style="height:${8+(h.m-7)*14}px;${h.m<8?'opacity:.45;':''}"></div></div>`).join('')+
+    labeled.map((h,i)=>`<div class="tl-ev" style="left:${px(h.y)};top:${i%2?76:6}px">
       <div class="yy">${h.y}</div><div class="mm">M${h.m}</div></div>`).join('')+
     `<div class="tl-gap" style="left:${px(1746)};width:calc(${px(NOW_YEAR)} - ${px(1746)})"></div>
      <div class="tl-gaplab" style="left:${px(1860)}">brecha: energía en acumulación (${NOW_YEAR-1746} años)</div>`;
@@ -518,6 +549,8 @@ async function runDiagnosis(){
     b_value:window.__BVAL,
     indice_contexto:window.__CTX_INDEX,
     probabilidades_poisson:window.__PROBS,
+    recurrencia_historica_M7_5:window.__RECUR,
+    catalogo_historico:'90 eventos zona Lima 1555–2025 (NOAA/NCEI + USGS)',
     brecha:'Última ruptura total del segmento Lima: 1746 (M~8.8). IGP estima potencial M8.5–8.8 acumulado. Convergencia Nazca 6–7 cm/año.',
     ultimos_eventos:EVENTS.slice(0,8).map(e=>`${e.t.toISOString().slice(0,10)} M${e.mag} ${Math.round(e.depth)}km ${e.place}`)
   };
@@ -567,7 +600,7 @@ function localDiagnosis(r){
 <h3>Situación actual</h3>
 <p>En los últimos 90 días se registraron <strong>${r.total_eventos} sismos M≥3.5</strong> en un radio de 400 km de Lima (≈${rate} por mes), con magnitud máxima <strong>M${r.mag_max}</strong> y profundidad media de ${r.prof_media_km} km. El índice de contexto de la app es <strong>${ci.idx}/100 (${ci.nivel})</strong>, dominado por la energía acumulada en la brecha sísmica.</p>
 <h3>Lectura estadística y geofísica</h3>
-<p>${bTxt} Bajo el modelo de Poisson, la probabilidad de al menos un M≥5 en 12 meses es ~${p5}, y de un M≥6, ~${p6}. Estas cifras reflejan la frecuencia de la zona, no un evento específico. El factor estructural sigue siendo la brecha: ${NOW_YEAR-1746} años sin ruptura total del segmento frente a Lima, con potencial estimado de M8.5+ según el IGP.</p>
+<p>El catálogo histórico (1555–hoy) muestra un intervalo medio de ${r.recurrencia_historica_M7_5?.intervalo_medio_anios ?? '≈17'} años entre sismos M≥7.5 en la zona; desde el último (${r.recurrencia_historica_M7_5?.ultimo ?? 2007}) han pasado ${r.recurrencia_historica_M7_5?.transcurridos ?? '≈19'} años, por encima del promedio, con una probabilidad histórica de ${r.recurrencia_historica_M7_5?.p10 ?? '≈45'}% de un M≥7.5 en la próxima década. ${bTxt} Bajo el modelo de Poisson, la probabilidad de al menos un M≥5 en 12 meses es ~${p5}, y de un M≥6, ~${p6}. Estas cifras reflejan la frecuencia de la zona, no un evento específico. El factor estructural sigue siendo la brecha: ${NOW_YEAR-1746} años sin ruptura total del segmento frente a Lima, con potencial estimado de M8.5+ según el IGP.</p>
 <h3>Escenario de riesgo para Lima</h3>
 <p>El riesgo no depende solo de la magnitud sino del suelo y la construcción: distritos sobre suelos blandos (p. ej. zonas de Villa El Salvador, Callao, La Molina) amplifican las ondas, y la autoconstrucción informal concentra la vulnerabilidad. Un sismo de la brecha implicaría además riesgo de tsunami en la franja costera, con minutos para evacuar.</p>
 <h3>Recomendaciones de preparación</h3>
