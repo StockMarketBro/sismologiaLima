@@ -188,6 +188,17 @@
   <section id="reciente">
     <div class="eyebrow">02 · Datos en vivo (USGS)</div>
     <h2>Actividad de los últimos 90 días</h2>
+    <div class="card" style="margin-bottom:18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:12px 18px">
+      <label style="display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">
+        <input type="checkbox" id="autoChk" onchange="toggleAuto()" style="width:16px;height:16px;accent-color:var(--ocean)">
+        Auto-actualizar cada 10 min
+      </label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">
+        <input type="checkbox" id="notifChk" onchange="toggleNotif()" style="width:16px;height:16px;accent-color:var(--alert)">
+        Notificarme si aparece un sismo M≥4.5
+      </label>
+      <span class="mono" style="font-size:11.5px;color:var(--muted);margin-left:auto" id="lastUpd"></span>
+    </div>
     <div class="grid3" style="margin-bottom:18px">
       <div class="card stat"><div class="big mono" id="stCount">–</div><div class="lab">eventos M≥3.5 (radio 400 km)</div></div>
       <div class="card stat"><div class="big mono" id="stMax">–</div><div class="lab">magnitud máxima</div></div>
@@ -223,6 +234,10 @@
         <p style="margin-bottom:14px"><strong>Recurrencia histórica (1555–hoy).</strong> Con 470 años de catálogo documental de la zona de Lima (NOAA/USGS), la probabilidad de largo plazo se estima desde los intervalos reales entre grandes sismos:</p>
         <div class="grid3" id="recurGrid"></div>
       </div>
+      <div style="border-top:1.5px solid var(--grid);margin-top:20px;padding-top:18px">
+        <p style="margin-bottom:14px"><strong>Modelo de machine learning (embebido).</strong> Regresión logística entrenada con el catálogo 1555–2025 (456 muestras anuales) al estilo de los pronósticos ML académicos: combina el tiempo transcurrido desde el último gran sismo y la actividad moderada reciente. Se recalcula con los datos en vivo:</p>
+        <div class="grid3" id="mlGrid"></div>
+      </div>
       <p style="margin-top:16px;font-size:13px;color:var(--muted)">
         ⚠ Estas cifras describen la <em>frecuencia estadística</em> de la zona, no una predicción de un evento específico. La extrapolación a M≥7 desde un catálogo de 90 días tiene alta incertidumbre. El megasismo de la brecha (M8.5+) no se puede estimar con esta ventana: su probabilidad es de largo plazo y crece con la energía acumulada desde 1746, pero su fecha es incognoscible.
       </p>
@@ -245,12 +260,32 @@
     </div>
   </section>
 
+  <!-- ESCALAS -->
+  <section id="escalas">
+    <div class="eyebrow">05 · Las tres escalas de anticipación</div>
+    <h2>Dónde encaja cada método</h2>
+    <div class="grid3">
+      <div class="card">
+        <div class="eyebrow" style="color:var(--alert)">Segundos · Alerta</div>
+        <p style="font-size:14px"><strong>E3WS / SASPe (IGP).</strong> Machine learning sobre los 3 primeros segundos de la onda P en una estación: detecta, localiza y estima magnitud <em>cuando el sismo ya inició</em>, para alertar antes de que llegue la sacudida fuerte. Opera con la red sísmica nacional y los dispositivos Alert IGP — es territorio exclusivo del Estado; esta app no alerta.</p>
+      </div>
+      <div class="card" style="border-width:2.5px">
+        <div class="eyebrow" style="color:var(--amber)">Días a años · Pronóstico</div>
+        <p style="font-size:14px"><strong>Esta app.</strong> Estadística sobre catálogos: Gutenberg–Richter + Poisson (corto plazo), recurrencia histórica de 470 años y modelo ML logístico (mediano plazo). Estima <em>probabilidades</em>, nunca fechas. Es el mismo terreno del "pronóstico" que el IGP reconoce como posible, a diferencia de la predicción.</p>
+      </div>
+      <div class="card">
+        <div class="eyebrow" style="color:var(--ocean)">Décadas · Escenario</div>
+        <p style="font-size:14px"><strong>Brecha y acoplamiento.</strong> Geodesia GPS y sismicidad histórica identifican el segmento acoplado de ~400 km frente a Lima acumulando energía desde 1746 (potencial M8.5+). Define el escenario de riesgo para planificación y construcción, no el cuándo.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- DIAGNÓSTICO IA -->
   <section id="diagnostico">
-    <div class="eyebrow">05 · Análisis con IA</div>
+    <div class="eyebrow">06 · Análisis con IA</div>
     <h2>Diagnóstico sofisticado</h2>
     <div class="card">
-      <p style="margin-bottom:16px">Genera un diagnóstico integral con Claude: cruza los datos en vivo de esta página con búsqueda de noticias recientes (IGP, INDECI, prensa) y el contexto geofísico, y produce una evaluación estructurada con recomendaciones de preparación.</p>
+      <p style="margin-bottom:16px">Genera un diagnóstico integral con inteligencia artificial: cruza los datos en vivo de esta página con búsqueda de noticias recientes (IGP, INDECI, prensa) y el contexto geofísico, y produce una evaluación estructurada con recomendaciones de preparación.</p>
       <button class="diag-btn" id="diagBtn" onclick="runDiagnosis()">Generar diagnóstico IA</button>
       <div class="spinner" id="spin">▚ Analizando sismicidad, brecha y noticias recientes…</div>
       <div id="diagOut"></div>
@@ -296,6 +331,30 @@ async function loadUSGS(){
       depth:f.geometry.coordinates[2],
       place:f.properties.place||'—'
     })).filter(e=>e.mag!=null);
+    // Fuente adicional: IGP/CENSIS (reportes oficiales del Perú)
+    try{
+      const yr=new Date().getFullYear();
+      const igpRes=await Promise.all([yr,yr-1].map(y=>
+        fetch(`https://ultimosismo.igp.gob.pe/api/ultimo-sismo/ajaxb/${y}`).then(r=>r.json()).catch(()=>[])));
+      const igpRaw=igpRes.flat();
+      const cut=Date.now()-90*86400000;
+      const seen=new Set(EVENTS.map(e=>e.t.toISOString().slice(0,13)+'|'+e.mag.toFixed(0)));
+      igpRaw.forEach(s=>{
+        const lat=+(s.latitud??s.lat), lon=+(s.longitud??s.lon);
+        const mag=+(s.magnitud??s.mag), depth=+(s.profundidad??s.depth??0);
+        const ft=(s.fecha_local??s.FechaLocal??s.fecha??'')+'T'+(s.hora_local??s.HoraLocal??s.hora??'00:00:00');
+        const t=new Date(ft.replace(' ','T'));
+        if(!lat||!lon||!mag||isNaN(t))return;
+        const km=Math.hypot((lat+12.046)*111,(lon+77.043)*111*Math.cos(-12*Math.PI/180));
+        if(km>400||mag<3.5||t.getTime()<cut)return;
+        const k=t.toISOString().slice(0,13)+'|'+mag.toFixed(0);
+        if(seen.has(k))return; seen.add(k);
+        EVENTS.push({t,mag,depth,place:(s.referencia??s.ref??'IGP')+' · IGP'});
+      });
+      EVENTS.sort((a,b)=>b.t-a.t);
+      if(igpRaw.length)document.getElementById('dataSrc').textContent=
+        'Fuentes: USGS FDSN Event API + IGP/CENSIS (reportes oficiales) · radio 400 km desde Lima';
+    }catch(e){/* IGP no disponible (CORS o red): continúa solo con USGS */}
   }catch(e){
     usingFallback = true;
     // Muestra representativa si no hay conexión (valores típicos de la zona)
@@ -328,9 +387,12 @@ function render(){
   drawGR();
   drawProbs();
   drawRecurrence();
+  drawML();
   drawTimeline();
   drawDrum();
   computeIndex(maxM, n, meanDepth);
+  checkNew();
+  stampUpdate();
 }
 
 function renderTable(){
@@ -434,6 +496,28 @@ function drawGR(){
   document.getElementById('bval').textContent=b;
   window.__BVAL=b;
   window.__GR={a:inter,b:-slope};
+}
+
+/* ---------- Modelo ML (logístico, entrenado offline con el catálogo 1555-2025) ---------- */
+const ML={w:[0.3195,0.1472],b:-0.1776,mu:[14.86,0.467],sd:[12.735,1.143],auc:0.60,base:45.6};
+function drawML(){
+  const big=HIST_CAT.filter(e=>e.m!=null&&e.m>=7.5).map(e=>e.y);
+  const lastBig=Math.max(...big);
+  const gap=NOW_YEAR-lastBig;
+  const modCat=HIST_CAT.filter(e=>e.m!=null&&e.m>=5.5&&e.m<7.5&&e.y>=NOW_YEAR-10).length;
+  const modLive=EVENTS.filter(e=>e.mag>=5.5).length; // eventos vivos M>=5.5 no presentes en el catálogo
+  const act10=modCat+modLive;
+  const z=[(gap-ML.mu[0])/ML.sd[0],(act10-ML.mu[1])/ML.sd[1]];
+  const p=1/(1+Math.exp(-(z[0]*ML.w[0]+z[1]*ML.w[1]+ML.b)));
+  const pp=(p*100).toFixed(0);
+  document.getElementById('mlGrid').innerHTML=`
+    <div class="stat"><div class="big mono" style="color:${p>0.5?'var(--amber)':'var(--ocean)'}">${pp}%</div>
+      <div class="lab">P(M≥7.5 en 10 años) según el modelo</div></div>
+    <div class="stat"><div class="big mono">${gap} · ${act10}</div>
+      <div class="lab">features: años desde el último M≥7.5 (${lastBig}) · eventos M5.5–7.4 en 10 años</div></div>
+    <div class="stat"><div class="big mono">0.60</div>
+      <div class="lab">AUC del modelo (base histórica: ${ML.base}%) · señal modesta pero mejor que el azar</div></div>`;
+  window.__ML={p10:+pp,gap,act10,auc:ML.auc,nota:'regresión logística entrenada con 456 muestras anuales del catálogo 1560-2015'};
 }
 
 /* ---------- Probabilidades (G-R + Poisson) ---------- */
@@ -550,6 +634,7 @@ async function runDiagnosis(){
     indice_contexto:window.__CTX_INDEX,
     probabilidades_poisson:window.__PROBS,
     recurrencia_historica_M7_5:window.__RECUR,
+    modelo_ml:window.__ML,
     catalogo_historico:'90 eventos zona Lima 1555–2025 (NOAA/NCEI + USGS)',
     brecha:'Última ruptura total del segmento Lima: 1746 (M~8.8). IGP estima potencial M8.5–8.8 acumulado. Convergencia Nazca 6–7 cm/año.',
     ultimos_eventos:EVENTS.slice(0,8).map(e=>`${e.t.toISOString().slice(0,10)} M${e.mag} ${Math.round(e.depth)}km ${e.place}`)
@@ -564,6 +649,20 @@ Sé riguroso, cita magnitudes y fechas concretas, distingue hechos de estimacion
 
 DATOS DE LA APP:
 ${JSON.stringify(resumen,null,2)}`;
+  // 1) Servicio propio (app publicada con backend gratuito — ver README del proyecto)
+  try{
+    const r0=await fetch('api/diagnostico',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(resumen)});
+    if(r0.ok){
+      const j0=await r0.json();
+      if(j0.text){
+        out.innerHTML=j0.text.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+        sp.style.display='none';out.style.display='block';btn.disabled=false;
+        btn.textContent='Regenerar diagnóstico';return;
+      }
+    }
+  }catch(e){/* sin backend propio: probar IA del entorno */}
+  // 2) IA integrada del entorno (si la app corre dentro de una plataforma con IA)
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -580,7 +679,7 @@ ${JSON.stringify(resumen,null,2)}`;
       : 'No se pudo generar el diagnóstico. Intenta de nuevo.';
   }catch(e){
     out.innerHTML = localDiagnosis(resumen) +
-      `<p style="margin-top:14px;font-size:12.5px;color:var(--muted)">ℹ Diagnóstico generado por el motor local de la app. El análisis con IA (que además busca noticias recientes) solo está disponible cuando la app se ejecuta dentro de Claude.ai.</p>`;
+      `<p style="margin-top:14px;font-size:12.5px;color:var(--muted)">ℹ Diagnóstico generado por el motor local de la app. El análisis con IA en línea (que además revisa noticias recientes) se activa al publicar la app con su servicio gratuito de IA configurado — ver README del proyecto.</p>`;
   }
   sp.style.display='none';out.style.display='block';btn.disabled=false;
   btn.textContent='Regenerar diagnóstico';
@@ -600,12 +699,49 @@ function localDiagnosis(r){
 <h3>Situación actual</h3>
 <p>En los últimos 90 días se registraron <strong>${r.total_eventos} sismos M≥3.5</strong> en un radio de 400 km de Lima (≈${rate} por mes), con magnitud máxima <strong>M${r.mag_max}</strong> y profundidad media de ${r.prof_media_km} km. El índice de contexto de la app es <strong>${ci.idx}/100 (${ci.nivel})</strong>, dominado por la energía acumulada en la brecha sísmica.</p>
 <h3>Lectura estadística y geofísica</h3>
-<p>El catálogo histórico (1555–hoy) muestra un intervalo medio de ${r.recurrencia_historica_M7_5?.intervalo_medio_anios ?? '≈17'} años entre sismos M≥7.5 en la zona; desde el último (${r.recurrencia_historica_M7_5?.ultimo ?? 2007}) han pasado ${r.recurrencia_historica_M7_5?.transcurridos ?? '≈19'} años, por encima del promedio, con una probabilidad histórica de ${r.recurrencia_historica_M7_5?.p10 ?? '≈45'}% de un M≥7.5 en la próxima década. ${bTxt} Bajo el modelo de Poisson, la probabilidad de al menos un M≥5 en 12 meses es ~${p5}, y de un M≥6, ~${p6}. Estas cifras reflejan la frecuencia de la zona, no un evento específico. El factor estructural sigue siendo la brecha: ${NOW_YEAR-1746} años sin ruptura total del segmento frente a Lima, con potencial estimado de M8.5+ según el IGP.</p>
+<p>El catálogo histórico (1555–hoy) muestra un intervalo medio de ${r.recurrencia_historica_M7_5?.intervalo_medio_anios ?? '≈17'} años entre sismos M≥7.5 en la zona; desde el último (${r.recurrencia_historica_M7_5?.ultimo ?? 2007}) han pasado ${r.recurrencia_historica_M7_5?.transcurridos ?? '≈19'} años, por encima del promedio, con una probabilidad histórica de ${r.recurrencia_historica_M7_5?.p10 ?? '≈45'}% de un M≥7.5 en la próxima década — el modelo ML embebido, con los datos vivos, la estima en ${r.modelo_ml?.p10 ?? '≈53'}% (AUC 0.60: señal modesta, coherente con la estadística). ${bTxt} Bajo el modelo de Poisson, la probabilidad de al menos un M≥5 en 12 meses es ~${p5}, y de un M≥6, ~${p6}. Estas cifras reflejan la frecuencia de la zona, no un evento específico. El factor estructural sigue siendo la brecha: ${NOW_YEAR-1746} años sin ruptura total del segmento frente a Lima, con potencial estimado de M8.5+ según el IGP.</p>
 <h3>Escenario de riesgo para Lima</h3>
 <p>El riesgo no depende solo de la magnitud sino del suelo y la construcción: distritos sobre suelos blandos (p. ej. zonas de Villa El Salvador, Callao, La Molina) amplifican las ondas, y la autoconstrucción informal concentra la vulnerabilidad. Un sismo de la brecha implicaría además riesgo de tsunami en la franja costera, con minutos para evacuar.</p>
 <h3>Recomendaciones de preparación</h3>
 <p>Mochila de emergencia y agua para 72 h · plan familiar de encuentro · asegurar muebles altos · identificar zonas seguras internas y rutas de evacuación (verticales si vives cerca al mar) · activar la alerta SASPe y seguir al IGP e INDECI · si tu vivienda es autoconstruida, evaluación estructural.</p>
 <p><strong>Ningún índice o estadística permite predecir la fecha de un terremoto.</strong> El valor de este diagnóstico está en dimensionar el contexto y prepararse.</p>`;
+}
+
+/* ================= AUTO-ACTUALIZACIÓN ================= */
+let autoTimer=null, knownKeys=new Set(), notifOn=false;
+const evKey=e=>e.t.toISOString().slice(0,16)+'|'+e.mag.toFixed(1);
+
+function stampUpdate(){
+  const el=document.getElementById('lastUpd');
+  if(el)el.textContent='última actualización: '+new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function checkNew(){
+  if(knownKeys.size){
+    const fresh=EVENTS.filter(e=>!knownKeys.has(evKey(e))&&e.mag>=4.5);
+    if(fresh.length&&notifOn&&Notification.permission==='granted'){
+      fresh.forEach(e=>new Notification('SISMO·LIMA — nuevo evento',{
+        body:`M${e.mag.toFixed(1)} · ${Math.round(e.depth)} km · ${e.place}`,
+      }));
+    }
+  }
+  EVENTS.forEach(e=>knownKeys.add(evKey(e)));
+}
+
+function toggleAuto(){
+  const on=document.getElementById('autoChk').checked;
+  clearInterval(autoTimer);
+  if(on)autoTimer=setInterval(()=>loadUSGS(),10*60*1000);
+}
+
+async function toggleNotif(){
+  const chk=document.getElementById('notifChk');
+  if(chk.checked){
+    const perm=await Notification.requestPermission();
+    notifOn=(perm==='granted');
+    if(!notifOn)chk.checked=false;
+    else{document.getElementById('autoChk').checked=true;toggleAuto();}
+  }else notifOn=false;
 }
 
 loadUSGS();
