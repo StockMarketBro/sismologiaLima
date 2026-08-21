@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SISMO·LIMA — Diagnóstico de contexto sísmico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -141,6 +143,27 @@
   #diagOut h3{margin:14px 0 6px;font-variation-settings:'wdth' 80,'wght' 800;text-transform:uppercase;font-size:16px}
   .spinner{display:none;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);margin-top:12px}
 
+  /* nav */
+  nav{position:sticky;top:0;z-index:500;background:var(--card);border-bottom:1.5px solid var(--ink);
+      display:flex;gap:4px;overflow-x:auto;padding:8px 16px;-webkit-overflow-scrolling:touch}
+  nav a{font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;
+        color:var(--ink);text-decoration:none;padding:6px 10px;white-space:nowrap;border:1px solid transparent}
+  nav a:hover{border-color:var(--ink);background:var(--paper)}
+  /* resumen rápido */
+  .quick{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+  @media(max-width:820px){.quick{grid-template-columns:1fr}}
+  .quick .card{padding:14px 16px}
+  .quick .q{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .quick .a{font-size:17px;font-variation-settings:'wdth' 84,'wght' 700;margin-top:4px}
+  .simple{font-size:14.5px;color:var(--muted);margin:-6px 0 14px;max-width:70ch}
+  .simple b{color:var(--ink)}
+  /* mapa */
+  #map{height:480px;border:1.5px solid var(--ink);box-shadow:5px 5px 0 rgba(25,24,23,.12)}
+  .maplegend{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:12.5px}
+  .maplegend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1.5px solid var(--ink)}
+  .mapctl{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:14px}
+  .leaflet-container{font-family:'IBM Plex Mono',monospace}
   footer{border-top:2px solid var(--ink);padding:20px 28px;font-size:12.5px;color:var(--muted);background:var(--card)}
   a{color:var(--ocean)}
   :focus-visible{outline:3px solid var(--ocean);outline-offset:2px}
@@ -158,16 +181,29 @@
   <div class="drum-label" id="drumLabel">trazo continuo · eventos M≥4.5 (90 días) marcados en rojo</div>
 </header>
 
+<nav aria-label="Secciones">
+  <a href="#resumen">Resumen</a><a href="#mapa">Mapa</a><a href="#reciente">Actividad</a>
+  <a href="#probs">Probabilidades</a><a href="#brecha">Historia</a><a href="#escalas">Escalas</a><a href="#diagnostico">Diagnóstico IA</a>
+</nav>
+
 <main>
 
   <div class="notice">
     <strong>⚠ Los sismos no se pueden predecir.</strong> Ninguna institución científica (IGP, USGS, JMA) puede anticipar fecha, lugar y magnitud de un terremoto. Esta aplicación no predice: sintetiza estadísticas, historial, datos geofísicos y noticias para producir un <em>diagnóstico de contexto y riesgo</em> — es decir, qué tan cargado está el escenario sísmico de Lima y qué implica para la preparación.
   </div>
 
-  <!-- ÍNDICE -->
-  <section id="indice">
-    <div class="eyebrow">01 · Síntesis</div>
-    <h2>Índice de contexto sísmico</h2>
+  <!-- RESUMEN RÁPIDO -->
+  <section id="resumen">
+    <div class="eyebrow">01 · Resumen rápido</div>
+    <h2>¿Cómo está la cosa hoy?</h2>
+    <p class="simple">Lo esencial en tres datos, sin tecnicismos. Todo lo demás abajo lo explica en detalle.</p>
+    <div class="quick">
+      <div class="card"><div class="q">Último sismo registrado</div><div class="a" id="qLast">cargando…</div></div>
+      <div class="card"><div class="q">Sismos en los últimos 30 días</div><div class="a" id="qMonth">…</div></div>
+      <div class="card"><div class="q">En una frase</div><div class="a" id="qPhrase" style="font-size:15px">…</div></div>
+    </div>
+    <h2 style="margin-top:26px">Índice de contexto sísmico</h2>
+    <p class="simple">Un número de 0 a 100 que resume <b>qué tan cargado está el escenario</b>: cuánta energía acumula la zona, cuánta actividad hubo y de qué tamaño. <b>No es la probabilidad de que tiemble mañana.</b></p>
     <div class="card">
       <div class="gaugewrap">
         <div class="gauge" id="gauge">
@@ -184,10 +220,34 @@
     </div>
   </section>
 
+  <!-- MAPA -->
+  <section id="mapa">
+    <div class="eyebrow">02 · Mapa interactivo</div>
+    <h2>¿Dónde está temblando?</h2>
+    <p class="simple">Cada círculo es un sismo de los últimos 90 días: <b>más grande y más rojo = más fuerte</b>. Toca cualquiera para ver el detalle. Se actualiza solo con los datos en vivo.</p>
+    <div class="mapctl">
+      <label style="display:flex;gap:7px;align-items:center;cursor:pointer">
+        <input type="checkbox" id="lyRec" checked onchange="refreshMapLayers()" style="width:15px;height:15px;accent-color:var(--ocean)"> Sismos recientes (90 días)
+      </label>
+      <label style="display:flex;gap:7px;align-items:center;cursor:pointer">
+        <input type="checkbox" id="lyHist" onchange="refreshMapLayers()" style="width:15px;height:15px;accent-color:var(--alert)"> Grandes sismos históricos (M≥7.5, 1555–2007)
+      </label>
+    </div>
+    <div id="map" role="application" aria-label="Mapa de sismos en Perú"></div>
+    <div class="maplegend">
+      <span><i class="dot" style="background:#144A6E"></i> M 3.5–4.4</span>
+      <span><i class="dot" style="background:#B87A1E"></i> M 4.5–5.4</span>
+      <span><i class="dot" style="background:#C8371E"></i> M 5.5+</span>
+      <span><i class="dot" style="background:transparent;border-style:dashed"></i> histórico M≥7.5</span>
+      <span class="mono" style="color:var(--muted)" id="mapNote"></span>
+    </div>
+  </section>
+
   <!-- ACTIVIDAD RECIENTE -->
   <section id="reciente">
-    <div class="eyebrow">02 · Datos en vivo (USGS)</div>
+    <div class="eyebrow">03 · Datos en vivo (USGS + IGP)</div>
     <h2>Actividad de los últimos 90 días</h2>
+    <p class="simple">Los números y gráficos detrás del mapa: cuántos sismos hubo, de qué tamaño y a qué profundidad. <b>Muchos sismos pequeños es lo normal</b> en una zona de subducción; lo relevante son los cambios de patrón.</p>
     <div class="card" style="margin-bottom:18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:12px 18px">
       <label style="display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">
         <input type="checkbox" id="autoChk" onchange="toggleAuto()" style="width:16px;height:16px;accent-color:var(--ocean)">
@@ -225,8 +285,9 @@
 
   <!-- PROBABILIDADES -->
   <section id="probs">
-    <div class="eyebrow">03 · Pronóstico probabilístico</div>
+    <div class="eyebrow">04 · Pronóstico probabilístico</div>
     <h2>Probabilidad estadística de ocurrencia</h2>
+    <p class="simple">Aquí sí hay <b>porcentajes</b>: la probabilidad de que ocurra al menos un sismo de cada tamaño en 30 días o 12 meses, según la frecuencia real de la zona. Ojo: describe a la zona, no anuncia un sismo específico.</p>
     <div class="card">
       <p style="margin-bottom:16px">Estimación de la probabilidad de que ocurra <strong>al menos un sismo</strong> de cada magnitud en el área de análisis (radio 400 km de Lima), extrapolando la relación Gutenberg–Richter ajustada a los datos recientes bajo un modelo de Poisson: <span class="mono" style="font-size:13px">P = 1 − e<sup>−λt</sup></span>.</p>
       <div class="grid3" id="probGrid"></div>
@@ -246,8 +307,9 @@
 
   <!-- BRECHA SÍSMICA -->
   <section id="brecha">
-    <div class="eyebrow">04 · Historial y geofísica</div>
+    <div class="eyebrow">05 · Historial y geofísica</div>
     <h2>La brecha sísmica frente a Lima</h2>
+    <p class="simple">La historia larga: frente a Lima hay un tramo de placas <b>trabado desde 1746</b> que sigue acumulando energía. Por eso el escenario del "gran sismo" existe — aunque nadie sepa la fecha.</p>
     <div class="card">
       <p>Frente a la costa central del Perú, la placa de Nazca subduce bajo la Sudamericana a ~6–7 cm/año. El último megasismo que rompió completamente el segmento frente a Lima fue el de <strong>1746 (M≈8.8)</strong>, que destruyó Lima y generó un tsunami que arrasó el Callao. Los sismos de 1940, 1966 y 1974 (M≈8) liberaron energía solo parcialmente. El Instituto Geofísico del Perú estima que este segmento ha acumulado deformación suficiente para un evento de <strong>M 8.5–8.8</strong>, sin que sea posible saber cuándo ocurrirá.</p>
       <div class="timeline" id="tl" aria-label="Línea de tiempo de grandes sismos frente a Lima"></div>
@@ -262,7 +324,7 @@
 
   <!-- ESCALAS -->
   <section id="escalas">
-    <div class="eyebrow">05 · Las tres escalas de anticipación</div>
+    <div class="eyebrow">06 · Las tres escalas de anticipación</div>
     <h2>Dónde encaja cada método</h2>
     <div class="grid3">
       <div class="card">
@@ -282,7 +344,7 @@
 
   <!-- DIAGNÓSTICO IA -->
   <section id="diagnostico">
-    <div class="eyebrow">06 · Análisis con IA</div>
+    <div class="eyebrow">07 · Análisis con IA</div>
     <h2>Diagnóstico sofisticado</h2>
     <div class="card">
       <p style="margin-bottom:16px">Genera un diagnóstico integral con inteligencia artificial: cruza los datos en vivo de esta página con búsqueda de noticias recientes (IGP, INDECI, prensa) y el contexto geofísico, y produce una evaluación estructurada con recomendaciones de preparación.</p>
@@ -329,6 +391,8 @@ async function loadUSGS(){
       t:new Date(f.properties.time),
       mag:f.properties.mag,
       depth:f.geometry.coordinates[2],
+      lat:f.geometry.coordinates[1],
+      lon:f.geometry.coordinates[0],
       place:f.properties.place||'—'
     })).filter(e=>e.mag!=null);
     // Fuente adicional: IGP/CENSIS (reportes oficiales del Perú)
@@ -349,7 +413,7 @@ async function loadUSGS(){
         if(km>400||mag<3.5||t.getTime()<cut)return;
         const k=t.toISOString().slice(0,13)+'|'+mag.toFixed(0);
         if(seen.has(k))return; seen.add(k);
-        EVENTS.push({t,mag,depth,place:(s.referencia??s.ref??'IGP')+' · IGP'});
+        EVENTS.push({t,mag,depth,lat,lon,place:(s.referencia??s.ref??'IGP')+' · IGP'});
       });
       EVENTS.sort((a,b)=>b.t-a.t);
       if(igpRaw.length)document.getElementById('dataSrc').textContent=
@@ -363,6 +427,7 @@ async function loadUSGS(){
       t:new Date(base - Math.random()*90*86400000),
       mag:+(3.5+Math.random()*1.9).toFixed(1),
       depth:Math.round(20+Math.random()*90),
+      lat:-12.05+(Math.random()-0.5)*4, lon:-77.6+(Math.random()-0.5)*2.4,
       place:'frente a la costa de Lima (muestra)'
     })).sort((a,b)=>b.t-a.t);
     document.getElementById('dataSrc').textContent =
@@ -391,6 +456,8 @@ function render(){
   drawTimeline();
   drawDrum();
   computeIndex(maxM, n, meanDepth);
+  renderMap();
+  fillQuick();
   checkNew();
   stampUpdate();
 }
@@ -403,6 +470,25 @@ function renderTable(){
     <td class="mag ${cls}">M ${e.mag.toFixed(1)}</td>
     <td class="mono">${Math.round(e.depth)} km</td><td>${e.place}</td></tr>`;
   }).join('');
+}
+
+/* ---------- Resumen rápido ---------- */
+function fillQuick(){
+  const last=EVENTS[0];
+  if(last){
+    const hrs=Math.round((Date.now()-last.t)/36e5);
+    const ago=hrs<48?`hace ${hrs} h`:`hace ${Math.round(hrs/24)} días`;
+    document.getElementById('qLast').innerHTML=`M ${last.mag.toFixed(1)} · ${ago}<br><span style="font-size:13px;font-weight:400;color:var(--muted)">${last.place}</span>`;
+  }
+  const month=EVENTS.filter(e=>Date.now()-e.t<30*86400000);
+  const strong=month.filter(e=>e.mag>=5).length;
+  document.getElementById('qMonth').innerHTML=`${month.length} <span style="font-size:13px;color:var(--muted)">(${strong} de M≥5)</span>`;
+  const idx=window.__CTX_INDEX?window.__CTX_INDEX.idx:null;
+  document.getElementById('qPhrase').textContent =
+    idx==null?'—':
+    idx>=75?'Contexto muy cargado: la zona acumula mucha energía. Ten lista tu mochila y tu plan.':
+    idx>=50?'Actividad normal sobre un escenario de fondo serio (la brecha de 1746). Prepárate sin alarmarte.':
+    'Actividad tranquila por ahora. Igual: en Lima, estar preparado no es opcional.';
 }
 
 /* ---------- Índice heurístico ---------- */
@@ -705,6 +791,44 @@ function localDiagnosis(r){
 <h3>Recomendaciones de preparación</h3>
 <p>Mochila de emergencia y agua para 72 h · plan familiar de encuentro · asegurar muebles altos · identificar zonas seguras internas y rutas de evacuación (verticales si vives cerca al mar) · activar la alerta SASPe y seguir al IGP e INDECI · si tu vivienda es autoconstruida, evaluación estructural.</p>
 <p><strong>Ningún índice o estadística permite predecir la fecha de un terremoto.</strong> El valor de este diagnóstico está en dimensionar el contexto y prepararse.</p>`;
+}
+
+/* ================= MAPA (Leaflet) ================= */
+const HIST_GEO = [{"y":1555,"m":8.4,"lat":-11.9,"lon":-77.6,"loc":"PERU"},{"y":1582,"m":7.8,"lat":-12.2,"lon":-77.6,"loc":"PERU"},{"y":1584,"m":8.4,"lat":-11.8,"lon":-77.8,"loc":"PERU"},{"y":1586,"m":8.5,"lat":-12.3,"lon":-77.7,"loc":"LIMA"},{"y":1609,"m":8.6,"lat":-11.9,"lon":-77.4,"loc":"PERU"},{"y":1630,"m":8.1,"lat":-12.2,"lon":-77.5,"loc":"LIMA"},{"y":1650,"m":8.1,"lat":-13.5,"lon":-72,"loc":"CUZCO,COLLAO,LIMA; BOLIVIA:  SICASICA"},{"y":1655,"m":7.7,"lat":-12.3,"lon":-77.6,"loc":"LIMA, CALLAO"},{"y":1678,"m":8.4,"lat":-9,"lon":-79,"loc":"LIMA,SALINAS-HUAURA,LIMA,CALLAO,CHANCA"},{"y":1687,"m":8.5,"lat":-13.5,"lon":-76.5,"loc":"LIMA"},{"y":1699,"m":7.8,"lat":-12.1,"lon":-76.6,"loc":"LIMA"},{"y":1716,"m":8.6,"lat":-13.7,"lon":-76,"loc":"PERU"},{"y":1725,"m":7.7,"lat":-9,"lon":-79,"loc":"TRUJILLO, ANCASH, LIMA"},{"y":1746,"m":8.0,"lat":-12.0,"lon":-77.2,"loc":"LIMA, CALLAO"},{"y":1806,"m":7.5,"lat":-12.1,"lon":-77.1,"loc":"LIMA"},{"y":1828,"m":8.3,"lat":-12.13,"lon":-77.81,"loc":"LIMA, CALLAO"},{"y":1846,"m":7.9,"lat":-14,"lon":-76.8,"loc":"PERU"},{"y":1897,"m":7.7,"lat":-11.9,"lon":-76.8,"loc":"PERU"},{"y":1907,"m":7.6,"lat":-13.2,"lon":-75.4,"loc":"PERU"},{"y":1908,"m":8.2,"lat":-14,"lon":-78,"loc":"OFF COAST"},{"y":1940,"m":8.2,"lat":-10.5,"lon":-77,"loc":"PERU"},{"y":1942,"m":8.2,"lat":-15,"lon":-76,"loc":"ICA, NAZCA"},{"y":1966,"m":8.1,"lat":-10.75,"lon":-78.64,"loc":"LIMA,HUACHO,HUAURA, CHANCAY,SUPE,SAN N"},{"y":1970,"m":7.9,"lat":-9.2,"lon":-78.8,"loc":"NORTHERN, PISCO, CHICLAYO"},{"y":1974,"m":8.1,"lat":-12.27,"lon":-77.79,"loc":"LIMA, CALLAO"},{"y":1996,"m":7.5,"lat":-9.59,"lon":-79.59,"loc":"NORTHERN:  CHIMBOTE, CALLAO"},{"y":1996,"m":7.7,"lat":-14.99,"lon":-75.67,"loc":"CHINCHA ALTA, ACARI, NAZCA, MARCONA"},{"y":2007,"m":8.0,"lat":-13.39,"lon":-76.6,"loc":"ICA, PISCO, LIMA"}];
+let MAP=null, lyRecent=null, lyHistoric=null;
+function magColor(m){return m>=5.5?'#C8371E':m>=4.5?'#B87A1E':'#144A6E'}
+function initMap(){
+  if(MAP||!window.L){if(!window.L)document.getElementById('mapNote').textContent='⚠ mapa no disponible sin conexión';return}
+  MAP=L.map('map',{scrollWheelZoom:false}).setView([-12.05,-76.6],6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap',maxZoom:12}).addTo(MAP);
+  lyRecent=L.layerGroup().addTo(MAP);
+  lyHistoric=L.layerGroup();
+  HIST_GEO.forEach(h=>{
+    L.circleMarker([h.lat,h.lon],{radius:6+(h.m-7.5)*7,color:'#C8371E',weight:1.5,dashArray:'4 3',fillOpacity:.06})
+     .bindPopup(`<b>${h.y}</b> · M${h.m}<br>${h.loc}`).addTo(lyHistoric);
+  });
+  // marca de Lima
+  L.circleMarker([-12.046,-77.043],{radius:4,color:'#191817',fillColor:'#191817',fillOpacity:1})
+   .bindPopup('<b>Lima</b>').addTo(MAP);
+}
+function renderMap(){
+  if(!MAP)initMap();
+  if(!MAP)return;
+  lyRecent.clearLayers();
+  EVENTS.forEach(e=>{
+    const r=3+Math.pow(2,e.mag-3.5)*1.6;
+    L.circleMarker([e.lat??0,e.lon??0],{radius:Math.min(r,26),color:magColor(e.mag),weight:1.5,fillColor:magColor(e.mag),fillOpacity:.45})
+     .bindPopup(`<b>M ${e.mag.toFixed(1)}</b> · ${Math.round(e.depth)} km prof.<br>${e.place}<br>${e.t.toLocaleString('es-PE',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}`)
+     .addTo(lyRecent);
+  });
+  document.getElementById('mapNote').textContent=`${EVENTS.length} eventos en el mapa`;
+}
+function refreshMapLayers(){
+  if(!MAP)return;
+  const rec=document.getElementById('lyRec').checked, his=document.getElementById('lyHist').checked;
+  rec?MAP.addLayer(lyRecent):MAP.removeLayer(lyRecent);
+  his?MAP.addLayer(lyHistoric):MAP.removeLayer(lyHistoric);
 }
 
 /* ================= AUTO-ACTUALIZACIÓN ================= */
