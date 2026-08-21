@@ -154,6 +154,8 @@
   @media(max-width:820px){.quick{grid-template-columns:1fr}}
   .quick .card{padding:14px 16px}
   .quick .q{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  #scanGrid{display:grid;gap:18px}
+  @media(max-width:820px){#scanGrid{grid-template-columns:1fr!important}}
   .quick .a{font-size:17px;font-variation-settings:'wdth' 84,'wght' 700;margin-top:4px}
   .simple{font-size:14.5px;color:var(--muted);margin:-6px 0 14px;max-width:70ch}
   .simple b{color:var(--ink)}
@@ -182,7 +184,7 @@
 </header>
 
 <nav aria-label="Secciones">
-  <a href="#resumen">Resumen</a><a href="#mapa">Mapa</a><a href="#reciente">Actividad</a>
+  <a href="#resumen">Resumen</a><a href="#mapa">Mapa</a><a href="#escaner">Escáner</a><a href="#reciente">Actividad</a>
   <a href="#probs">Probabilidades</a><a href="#brecha">Historia</a><a href="#escalas">Escalas</a><a href="#diagnostico">Diagnóstico IA</a>
 </nav>
 
@@ -224,13 +226,16 @@
   <section id="mapa">
     <div class="eyebrow">02 · Mapa interactivo</div>
     <h2>¿Dónde está temblando?</h2>
-    <p class="simple">Cada círculo es un sismo de los últimos 90 días: <b>más grande y más rojo = más fuerte</b>. Toca cualquiera para ver el detalle. Se actualiza solo con los datos en vivo.</p>
+    <p class="simple">Cada círculo es un sismo de los últimos 90 días <b>en todo el Perú</b>: <b>más grande y más rojo = más fuerte</b>. Toca cualquiera para ver el detalle. Se actualiza solo con los datos en vivo.</p>
     <div class="mapctl">
       <label style="display:flex;gap:7px;align-items:center;cursor:pointer">
         <input type="checkbox" id="lyRec" checked onchange="refreshMapLayers()" style="width:15px;height:15px;accent-color:var(--ocean)"> Sismos recientes (90 días)
       </label>
       <label style="display:flex;gap:7px;align-items:center;cursor:pointer">
         <input type="checkbox" id="lyHist" onchange="refreshMapLayers()" style="width:15px;height:15px;accent-color:var(--alert)"> Grandes sismos históricos (M≥7.5, 1555–2007)
+      </label>
+      <label style="display:flex;gap:7px;align-items:center;cursor:pointer">
+        <input type="checkbox" id="lyZon" onchange="refreshMapLayers()" style="width:15px;height:15px;accent-color:#191817"> Zonas del escáner
       </label>
     </div>
     <div id="map" role="application" aria-label="Mapa de sismos en Perú"></div>
@@ -243,9 +248,17 @@
     </div>
   </section>
 
+  <!-- ESCÁNER NACIONAL -->
+  <section id="escaner">
+    <div class="eyebrow">03 · Escáner nacional</div>
+    <h2>Radar por zonas sísmicas</h2>
+    <p class="simple">El Perú dividido en sus <b>cuatro grandes dominios sísmicos</b>. Cada tarjeta escanea la actividad en vivo de su zona y estima la probabilidad de un sismo fuerte, con su contexto de brecha histórica. Activa "zonas" en el mapa para verlas dibujadas.</p>
+    <div class="grid2" id="scanGrid" style="grid-template-columns:repeat(2,1fr)"></div>
+  </section>
+
   <!-- ACTIVIDAD RECIENTE -->
   <section id="reciente">
-    <div class="eyebrow">03 · Datos en vivo (USGS + IGP)</div>
+    <div class="eyebrow">04 · Datos en vivo (USGS + IGP)</div>
     <h2>Actividad de los últimos 90 días</h2>
     <p class="simple">Los números y gráficos detrás del mapa: cuántos sismos hubo, de qué tamaño y a qué profundidad. <b>Muchos sismos pequeños es lo normal</b> en una zona de subducción; lo relevante son los cambios de patrón.</p>
     <div class="card" style="margin-bottom:18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:12px 18px">
@@ -260,7 +273,7 @@
       <span class="mono" style="font-size:11.5px;color:var(--muted);margin-left:auto" id="lastUpd"></span>
     </div>
     <div class="grid3" style="margin-bottom:18px">
-      <div class="card stat"><div class="big mono" id="stCount">–</div><div class="lab">eventos M≥3.5 (radio 400 km)</div></div>
+      <div class="card stat"><div class="big mono" id="stCount">–</div><div class="lab">eventos M≥3.5 en todo el Perú · <span class="mono" id="stZone">–</span> en zona Lima</div></div>
       <div class="card stat"><div class="big mono" id="stMax">–</div><div class="lab">magnitud máxima</div></div>
       <div class="card stat"><div class="big mono" id="stDepth">–</div><div class="lab">profundidad media (km)</div></div>
     </div>
@@ -276,18 +289,18 @@
     </div>
     <div class="card" style="margin-top:18px">
       <table aria-label="Eventos sísmicos recientes">
-        <thead><tr><th>Fecha</th><th>Mag.</th><th>Prof.</th><th>Ubicación</th></tr></thead>
-        <tbody id="evTable"><tr><td colspan="4" class="mono">Cargando datos de USGS…</td></tr></tbody>
+        <thead><tr><th>Fecha</th><th>Mag.</th><th>Prof.</th><th>Dist. Lima</th><th>Ubicación</th></tr></thead>
+        <tbody id="evTable"><tr><td colspan="5" class="mono">Cargando datos de USGS…</td></tr></tbody>
       </table>
-      <div class="src" id="dataSrc">Fuente: USGS FDSN Event API · radio 400 km desde Lima</div>
+      <div class="src" id="dataSrc">Fuente: USGS FDSN Event API · todo el Perú</div>
     </div>
   </section>
 
   <!-- PROBABILIDADES -->
   <section id="probs">
-    <div class="eyebrow">04 · Pronóstico probabilístico</div>
+    <div class="eyebrow">05 · Pronóstico probabilístico</div>
     <h2>Probabilidad estadística de ocurrencia</h2>
-    <p class="simple">Aquí sí hay <b>porcentajes</b>: la probabilidad de que ocurra al menos un sismo de cada tamaño en 30 días o 12 meses, según la frecuencia real de la zona. Ojo: describe a la zona, no anuncia un sismo específico.</p>
+    <p class="simple">Aquí sí hay <b>porcentajes</b>: la probabilidad de que ocurra al menos un sismo de cada tamaño en 30 días o 12 meses, según la frecuencia real de la zona. Ojo: describe a la zona, no anuncia un sismo específico. Estos cálculos usan solo los sismos de la <b>zona de Lima (radio 400 km)</b>; el mapa y la actividad cubren todo el Perú.</p>
     <div class="card">
       <p style="margin-bottom:16px">Estimación de la probabilidad de que ocurra <strong>al menos un sismo</strong> de cada magnitud en el área de análisis (radio 400 km de Lima), extrapolando la relación Gutenberg–Richter ajustada a los datos recientes bajo un modelo de Poisson: <span class="mono" style="font-size:13px">P = 1 − e<sup>−λt</sup></span>.</p>
       <div class="grid3" id="probGrid"></div>
@@ -307,7 +320,7 @@
 
   <!-- BRECHA SÍSMICA -->
   <section id="brecha">
-    <div class="eyebrow">05 · Historial y geofísica</div>
+    <div class="eyebrow">06 · Historial y geofísica</div>
     <h2>La brecha sísmica frente a Lima</h2>
     <p class="simple">La historia larga: frente a Lima hay un tramo de placas <b>trabado desde 1746</b> que sigue acumulando energía. Por eso el escenario del "gran sismo" existe — aunque nadie sepa la fecha.</p>
     <div class="card">
@@ -324,7 +337,7 @@
 
   <!-- ESCALAS -->
   <section id="escalas">
-    <div class="eyebrow">06 · Las tres escalas de anticipación</div>
+    <div class="eyebrow">07 · Las tres escalas de anticipación</div>
     <h2>Dónde encaja cada método</h2>
     <div class="grid3">
       <div class="card">
@@ -344,7 +357,7 @@
 
   <!-- DIAGNÓSTICO IA -->
   <section id="diagnostico">
-    <div class="eyebrow">07 · Análisis con IA</div>
+    <div class="eyebrow">08 · Análisis con IA</div>
     <h2>Diagnóstico sofisticado</h2>
     <div class="card">
       <p style="margin-bottom:16px">Genera un diagnóstico integral con inteligencia artificial: cruza los datos en vivo de esta página con búsqueda de noticias recientes (IGP, INDECI, prensa) y el contexto geofísico, y produce una evaluación estructurada con recomendaciones de preparación.</p>
@@ -371,6 +384,8 @@ const HIST = [
   {y:2021,m:6.0,note:'Mala'}
 ];
 const NOW_YEAR = new Date().getFullYear();
+const distLima=(lat,lon)=>Math.hypot((lat+12.046)*111,(lon+77.043)*111*Math.cos(lat*Math.PI/180));
+let ZONE=[]; // subconjunto <=400 km de Lima: base de los cálculos probabilísticos
 /* Catálogo histórico zona Lima (radio ~450 km), 1555–2025.
    Fuente: NOAA/NCEI Significant Earthquake DB + USGS ComCat (catálogo documental v3, 2026-08-15) */
 const HIST_CAT = [{"y":1555,"m":8.4,"loc":"PERU"},{"y":1578,"m":null,"loc":"LIMA,CALLAO"},{"y":1582,"m":7.8,"loc":"PERU"},{"y":1584,"m":8.4,"loc":"PERU"},{"y":1586,"m":8.5,"loc":"LIMA","d":22},{"y":1594,"m":null,"loc":"ICA","d":40},{"y":1609,"m":8.6,"loc":"PERU"},{"y":1630,"m":8.1,"loc":"LIMA"},{"y":1647,"m":null,"loc":"PERU"},{"y":1650,"m":8.1,"loc":"CUZCO,COLLAO,LIMA; BOLIVIA:  SICASICA"},{"y":1654,"m":null,"loc":"LIMA; CHILE","d":11000},{"y":1655,"m":7.7,"loc":"LIMA, CALLAO"},{"y":1656,"m":null,"loc":"PERU","d":11000},{"y":1657,"m":null,"loc":"LIMA,CALLAO","d":11000},{"y":1664,"m":7.3,"loc":"ICA, PISCO","d":400},{"y":1678,"m":8.4,"loc":"LIMA,SALINAS-HUAURA,LIMA,CALLAO,CHANCAY"},{"y":1687,"m":8.5,"loc":"LIMA","d":5000},{"y":1699,"m":7.8,"loc":"LIMA"},{"y":1716,"m":8.6,"loc":"PERU"},{"y":1725,"m":7.7,"loc":"TRUJILLO, ANCASH, LIMA","d":1500},{"y":1725,"m":null,"loc":"CALLAO"},{"y":1746,"m":8.0,"loc":"LIMA, CALLAO","d":1141},{"y":1799,"m":null,"loc":"LIMA, CALLAO"},{"y":1806,"m":7.5,"loc":"LIMA"},{"y":1813,"m":null,"loc":"ICA","d":32},{"y":1828,"m":8.3,"loc":"LIMA, CALLAO","d":30},{"y":1840,"m":null,"loc":"LIMA"},{"y":1846,"m":7.9,"loc":"PERU"},{"y":1847,"m":null,"loc":"CALLAO"},{"y":1852,"m":null,"loc":"PERU"},{"y":1860,"m":null,"loc":"LIMA, CALLAO"},{"y":1861,"m":null,"loc":"PERU"},{"y":1865,"m":null,"loc":"PERU"},{"y":1865,"m":null,"loc":"CALLAO"},{"y":1868,"m":null,"loc":"LIMA, AREQUIPA, ARICA"},{"y":1869,"m":null,"loc":"LIMA"},{"y":1871,"m":null,"loc":"CHINCHA ISLANDS"},{"y":1871,"m":null,"loc":"CALLAO"},{"y":1877,"m":null,"loc":"CALLAO"},{"y":1878,"m":null,"loc":"CALLAO"},{"y":1897,"m":7.7,"loc":"PERU"},{"y":1907,"m":7.6,"loc":"PERU"},{"y":1907,"m":null,"loc":"PERU"},{"y":1908,"m":8.2,"loc":"OFF COAST"},{"y":1914,"m":null,"loc":"CALLAO"},{"y":1932,"m":6.8,"loc":"PERU"},{"y":1937,"m":6.2,"loc":"HUANCABAMBA,OXAPAMPA,EL PROGRESO,SAN DAVID","d":15},{"y":1940,"m":8.2,"loc":"PERU","d":179},{"y":1942,"m":8.2,"loc":"ICA, NAZCA","d":30},{"y":1946,"m":7.0,"loc":"PISCO"},{"y":1946,"m":7.3,"loc":"JOCAIBAMBA,CERRO ANGASCHAJ,CERRO SILLAPATA","d":800},{"y":1947,"m":7.3,"loc":"SATIPO,ANDAMARCA,ACOBAMBA,LA MERCED,VICTOC","d":233},{"y":1948,"m":6.8,"loc":"CANETE","d":4},{"y":1950,"m":7.0,"loc":"ICA,CHIMBOTE,HUARAZ,CAJAMARCA,CUZCO,MOQUEGUA","d":4},{"y":1953,"m":5.5,"loc":"LIMA"},{"y":1959,"m":null,"loc":"AYACUCHO,POMABAMBA,MOYOBAMBA,HUAHUAPUQUIO","d":7},{"y":1960,"m":7.0,"loc":"LIMA,NAZCA,ICA,HUANCAVELIC,PALPA,HUAITARA","d":63},{"y":1962,"m":6.3,"loc":"CASMA,HUARAZ,QUIRUVILCA,TRUJILLO","d":9},{"y":1963,"m":7.0,"loc":"HUAYLLACAYAN,CAJACAY,MALYAS,MALVAS,HUARAZ","d":1},{"y":1966,"m":8.1,"loc":"LIMA,HUACHO,HUAURA, CHANCAY,SUPE,SAN NICOLAS","d":110},{"y":1967,"m":7.0,"loc":"OFF COAST"},{"y":1969,"m":5.9,"loc":"LAMPA-JUNIN,HUAYTAPALLANA"},{"y":1969,"m":6.2,"loc":"HUAYTAPALLANA, LAMPA, CHILIFRUTA","d":150},{"y":1970,"m":5.4,"loc":"PANAO,CHACLLA,QUERO,AYLLAMARCA,LA LINDA","d":12},{"y":1970,"m":7.9,"loc":"NORTHERN, PISCO, CHICLAYO","d":66794},{"y":1974,"m":6.3,"loc":"LIMA, YAUYOS","d":10},{"y":1974,"m":8.1,"loc":"LIMA, CALLAO","d":78},{"y":1980,"m":4.9,"loc":"S CENTRAL","d":7},{"y":1981,"m":4.8,"loc":"AYACUCHO","d":8},{"y":1981,"m":5.2,"loc":"CENTRAL","d":10},{"y":1982,"m":6.1,"loc":"COAST, LUNAHUANA, LIMA, HUANCAYO","d":3},{"y":1985,"m":6.1,"loc":"COAST:  CHIMBOTE"},{"y":1986,"m":5.3,"loc":"HUARMEY, CASMA, HUARAX, CHIMBOTE","d":1},{"y":1987,"m":5.1,"loc":"SANTAOG DE CHUCO, TRUJILLO, CHIMBOTE","d":3},{"y":1993,"m":6.3,"loc":"LIMA","d":6},{"y":1996,"m":7.5,"loc":"NORTHERN:  CHIMBOTE, CALLAO"},{"y":1996,"m":7.7,"loc":"CHINCHA ALTA, ACARI, NAZCA, MARCONA","d":14},{"y":1999,"m":4.4,"loc":"CHUSCHI, CANGALLo, HUANCAPI"},{"y":2006,"m":6.7,"loc":"CENTRAL"},{"y":2007,"m":8.0,"loc":"ICA, PISCO, LIMA","d":514},{"y":2008,"m":5.3,"loc":"OFF COAST"},{"y":2008,"m":5.5,"loc":"CENTRAL:  OXAPAMPA, HUANCABAMBA"},{"y":2009,"m":4.6,"loc":"PACCHA"},{"y":2011,"m":6.9,"loc":"SAN VICENTE DE CANETE","d":1},{"y":2012,"m":6.4,"loc":"ICA"},{"y":2020,"m":4.5,"loc":"COAST:  CHIMBOTE","d":1},{"y":2021,"m":5.8,"loc":"CANETE: MALA","d":1},{"y":2022,"m":5.4,"loc":"LIMA, CALLAO, CHILCA","d":2},{"y":2024,"m":4.2,"loc":"AYACUCHO"},{"y":2025,"m":5.6,"loc":"LIMA, CALLAO","d":1}];
@@ -382,7 +397,7 @@ async function loadUSGS(){
   const end = new Date();
   const start = new Date(end.getTime() - 90*86400000);
   const url = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson`+
-    `&latitude=-12.0464&longitude=-77.0428&maxradiuskm=400`+
+    `&minlatitude=-18.6&maxlatitude=0.2&minlongitude=-82&maxlongitude=-68`+
     `&starttime=${start.toISOString().slice(0,10)}&minmagnitude=3.5&orderby=time`;
   try{
     const r = await fetch(url);
@@ -395,6 +410,7 @@ async function loadUSGS(){
       lon:f.geometry.coordinates[0],
       place:f.properties.place||'—'
     })).filter(e=>e.mag!=null);
+    EVENTS.forEach(e=>e.km=distLima(e.lat,e.lon));
     // Fuente adicional: IGP/CENSIS (reportes oficiales del Perú)
     try{
       const yr=new Date().getFullYear();
@@ -409,15 +425,14 @@ async function loadUSGS(){
         const ft=(s.fecha_local??s.FechaLocal??s.fecha??'')+'T'+(s.hora_local??s.HoraLocal??s.hora??'00:00:00');
         const t=new Date(ft.replace(' ','T'));
         if(!lat||!lon||!mag||isNaN(t))return;
-        const km=Math.hypot((lat+12.046)*111,(lon+77.043)*111*Math.cos(-12*Math.PI/180));
-        if(km>400||mag<3.5||t.getTime()<cut)return;
+        if(lat<-18.6||lat>0.2||lon<-82||lon>-68||mag<3.5||t.getTime()<cut)return;
         const k=t.toISOString().slice(0,13)+'|'+mag.toFixed(0);
         if(seen.has(k))return; seen.add(k);
-        EVENTS.push({t,mag,depth,lat,lon,place:(s.referencia??s.ref??'IGP')+' · IGP'});
+        EVENTS.push({t,mag,depth,lat,lon,km:distLima(lat,lon),place:(s.referencia??s.ref??'IGP')+' · IGP'});
       });
       EVENTS.sort((a,b)=>b.t-a.t);
       if(igpRaw.length)document.getElementById('dataSrc').textContent=
-        'Fuentes: USGS FDSN Event API + IGP/CENSIS (reportes oficiales) · radio 400 km desde Lima';
+        'Fuentes: USGS FDSN Event API + IGP/CENSIS (reportes oficiales) · todo el Perú';
     }catch(e){/* IGP no disponible (CORS o red): continúa solo con USGS */}
   }catch(e){
     usingFallback = true;
@@ -427,7 +442,7 @@ async function loadUSGS(){
       t:new Date(base - Math.random()*90*86400000),
       mag:+(3.5+Math.random()*1.9).toFixed(1),
       depth:Math.round(20+Math.random()*90),
-      lat:-12.05+(Math.random()-0.5)*4, lon:-77.6+(Math.random()-0.5)*2.4,
+      lat:-12.05+(Math.random()-0.5)*4, lon:-77.6+(Math.random()-0.5)*2.4, km:Math.random()*380,
       place:'frente a la costa de Lima (muestra)'
     })).sort((a,b)=>b.t-a.t);
     document.getElementById('dataSrc').textContent =
@@ -438,11 +453,16 @@ async function loadUSGS(){
 
 /* ================= RENDER ================= */
 function render(){
+  ZONE = EVENTS.filter(e=>e.km!=null&&e.km<=400);
   const n = EVENTS.length;
   const maxM = Math.max(...EVENTS.map(e=>e.mag));
   const meanDepth = EVENTS.reduce((s,e)=>s+e.depth,0)/n;
+  const zSrc = ZONE.length?ZONE:EVENTS;
+  const zMax = Math.max(...zSrc.map(e=>e.mag));
+  const zDepth = zSrc.reduce((s,e)=>s+e.depth,0)/zSrc.length;
 
   document.getElementById('stCount').textContent = n;
+  document.getElementById('stZone').textContent = ZONE.length;
   document.getElementById('stMax').textContent = 'M '+maxM.toFixed(1);
   document.getElementById('stDepth').textContent = meanDepth.toFixed(0);
   document.getElementById('gapYears').textContent = NOW_YEAR-1746;
@@ -455,8 +475,9 @@ function render(){
   drawML();
   drawTimeline();
   drawDrum();
-  computeIndex(maxM, n, meanDepth);
+  computeIndex(zMax, zSrc.length, zDepth);
   renderMap();
+  drawScanner();
   fillQuick();
   checkNew();
   stampUpdate();
@@ -468,7 +489,8 @@ function renderTable(){
     const cls = e.mag>=6?'m6':(e.mag>=5?'m5':'');
     return `<tr><td class="mono">${e.t.toLocaleDateString('es-PE',{day:'2-digit',month:'short'})} ${e.t.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}</td>
     <td class="mag ${cls}">M ${e.mag.toFixed(1)}</td>
-    <td class="mono">${Math.round(e.depth)} km</td><td>${e.place}</td></tr>`;
+    <td class="mono">${Math.round(e.depth)} km</td>
+    <td class="mono">${e.km!=null?Math.round(e.km)+' km':'—'}</td><td>${e.place}</td></tr>`;
   }).join('');
 }
 
@@ -556,7 +578,8 @@ function drawTimeChart(){
 function drawGR(){
   const [ctx,w,h]=setupCanvas('chartGR',230);
   const P={l:40,r:12,t:14,b:26};
-  const mags=[...EVENTS.map(e=>e.mag)].sort((a,b)=>a-b);
+  const src=(ZONE.length>=8?ZONE:EVENTS);
+  const mags=[...src.map(e=>e.mag)].sort((a,b)=>a-b);
   const bins=[];
   for(let M=3.5;M<=Math.max(6,mags[mags.length-1]);M+=0.3){
     const N=mags.filter(m=>m>=M).length;
@@ -591,7 +614,7 @@ function drawML(){
   const lastBig=Math.max(...big);
   const gap=NOW_YEAR-lastBig;
   const modCat=HIST_CAT.filter(e=>e.m!=null&&e.m>=5.5&&e.m<7.5&&e.y>=NOW_YEAR-10).length;
-  const modLive=EVENTS.filter(e=>e.mag>=5.5).length; // eventos vivos M>=5.5 no presentes en el catálogo
+  const modLive=(ZONE.length?ZONE:EVENTS).filter(e=>e.mag>=5.5).length; // zona Lima, M>=5.5 no presentes en el catálogo
   const act10=modCat+modLive;
   const z=[(gap-ML.mu[0])/ML.sd[0],(act10-ML.mu[1])/ML.sd[1]];
   const p=1/(1+Math.exp(-(z[0]*ML.w[0]+z[1]*ML.w[1]+ML.b)));
@@ -721,6 +744,7 @@ async function runDiagnosis(){
     probabilidades_poisson:window.__PROBS,
     recurrencia_historica_M7_5:window.__RECUR,
     modelo_ml:window.__ML,
+    escaner_nacional_por_zonas:window.__SCAN,
     catalogo_historico:'90 eventos zona Lima 1555–2025 (NOAA/NCEI + USGS)',
     brecha:'Última ruptura total del segmento Lima: 1746 (M~8.8). IGP estima potencial M8.5–8.8 acumulado. Convergencia Nazca 6–7 cm/año.',
     ultimos_eventos:EVENTS.slice(0,8).map(e=>`${e.t.toISOString().slice(0,10)} M${e.mag} ${Math.round(e.depth)}km ${e.place}`)
@@ -793,17 +817,64 @@ function localDiagnosis(r){
 <p><strong>Ningún índice o estadística permite predecir la fecha de un terremoto.</strong> El valor de este diagnóstico está en dimensionar el contexto y prepararse.</p>`;
 }
 
+/* ================= ESCÁNER POR ZONAS ================= */
+const ZONES_DEF=[
+ {id:'NORTE',nombre:'Costa y Andes Norte',box:[[-9.5,-82],[0.2,-73]],color:'#144A6E',
+  gap:'Acoplamiento parcial; grandes eventos poco frecuentes pero posibles (1619, 1953 Tumbes). La zona más "silenciosa" — lo cual no equivale a riesgo cero.'},
+ {id:'CENTRO',nombre:'Costa y Andes Centro (Lima)',box:[[-14,-82],[-9.5,-73]],color:'#C8371E',
+  gap:'La brecha de 1746: el segmento más cargado del país. Potencial M8.5+ según IGP. Toda la sección de probabilidades de esta app profundiza aquí.'},
+ {id:'SUR',nombre:'Costa y Andes Sur',box:[[-18.6,-82],[-14,-73]],color:'#B87A1E',
+  gap:'Laguna sísmica del sur: desde 1868 (M~8.8) la zona Tacna–Arica acumula energía; 2001 (Arequipa M8.4) liberó solo una parte. Incluye la sierra sur (como Coracora).'},
+ {id:'ORIENTE',nombre:'Oriente / sismos profundos',box:[[-18.6,-73],[0.2,-68]],color:'#6E6B62',
+  gap:'Sismos intraplaca a 100–650 km de profundidad: se sienten en medio país pero rara vez son destructivos en superficie. No descargan las brechas costeras.'}
+];
+const zoneOf=e=> e.lon>-73?'ORIENTE': e.lat>=-9.5?'NORTE': e.lat>=-14?'CENTRO':'SUR';
+function drawScanner(){
+  const B=1.0; // b-value canónico para extrapolación por zona (ventana corta)
+  const sum={};
+  const cards=ZONES_DEF.map(z=>{
+    const evs=EVENTS.filter(e=>e.lat!=null&&zoneOf(e)===z.id);
+    const n=evs.length, maxM=n?Math.max(...evs.map(e=>e.mag)):0;
+    const n45=evs.filter(e=>e.mag>=4.5).length;
+    const rateY=n45*365/90;                       // M>=4.5 esperados por año
+    const lam6=rateY*Math.pow(10,-B*(6-4.5));     // M>=6 por año (G-R, b=1)
+    const p6=1-Math.exp(-lam6);
+    const nivel=maxM>=6.5||p6>=0.6?['ALTA','var(--alert)']:maxM>=5.5||p6>=0.3?['MEDIA','var(--amber)']:['NORMAL','var(--ocean)'];
+    sum[z.id]={eventos_90d:n,mag_max:+maxM.toFixed(1),p_M6_12m:+(p6*100).toFixed(0),nivel:nivel[0]};
+    return `<div class="card" style="border-left:6px solid ${z.color}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <strong style="font-variation-settings:'wdth' 80,'wght' 800;text-transform:uppercase">${z.nombre}</strong>
+        <span class="mono" style="font-size:11px;padding:2px 8px;border:1.5px solid ${nivel[1]};color:${nivel[1]}">${nivel[0]}</span>
+      </div>
+      <div class="mono" style="font-size:13px;margin:10px 0 4px">${n} eventos (90 d) · máx M${n?maxM.toFixed(1):'—'} · ${n45} de M≥4.5</div>
+      <div style="display:flex;align-items:center;gap:10px;margin:6px 0 10px">
+        <span style="font-size:13px;white-space:nowrap">P(M≥6, 12 meses)</span>
+        <div class="bar"><i style="width:${Math.min(p6*100,100)}%;background:${z.color}"></i></div>
+        <span class="mono" style="font-size:13px">${(p6*100).toFixed(0)}%</span>
+      </div>
+      <p style="font-size:13px;color:var(--muted)">${z.gap}</p>
+    </div>`;
+  }).join('');
+  document.getElementById('scanGrid').innerHTML=cards;
+  window.__SCAN=sum;
+}
+
 /* ================= MAPA (Leaflet) ================= */
 const HIST_GEO = [{"y":1555,"m":8.4,"lat":-11.9,"lon":-77.6,"loc":"PERU"},{"y":1582,"m":7.8,"lat":-12.2,"lon":-77.6,"loc":"PERU"},{"y":1584,"m":8.4,"lat":-11.8,"lon":-77.8,"loc":"PERU"},{"y":1586,"m":8.5,"lat":-12.3,"lon":-77.7,"loc":"LIMA"},{"y":1609,"m":8.6,"lat":-11.9,"lon":-77.4,"loc":"PERU"},{"y":1630,"m":8.1,"lat":-12.2,"lon":-77.5,"loc":"LIMA"},{"y":1650,"m":8.1,"lat":-13.5,"lon":-72,"loc":"CUZCO,COLLAO,LIMA; BOLIVIA:  SICASICA"},{"y":1655,"m":7.7,"lat":-12.3,"lon":-77.6,"loc":"LIMA, CALLAO"},{"y":1678,"m":8.4,"lat":-9,"lon":-79,"loc":"LIMA,SALINAS-HUAURA,LIMA,CALLAO,CHANCA"},{"y":1687,"m":8.5,"lat":-13.5,"lon":-76.5,"loc":"LIMA"},{"y":1699,"m":7.8,"lat":-12.1,"lon":-76.6,"loc":"LIMA"},{"y":1716,"m":8.6,"lat":-13.7,"lon":-76,"loc":"PERU"},{"y":1725,"m":7.7,"lat":-9,"lon":-79,"loc":"TRUJILLO, ANCASH, LIMA"},{"y":1746,"m":8.0,"lat":-12.0,"lon":-77.2,"loc":"LIMA, CALLAO"},{"y":1806,"m":7.5,"lat":-12.1,"lon":-77.1,"loc":"LIMA"},{"y":1828,"m":8.3,"lat":-12.13,"lon":-77.81,"loc":"LIMA, CALLAO"},{"y":1846,"m":7.9,"lat":-14,"lon":-76.8,"loc":"PERU"},{"y":1897,"m":7.7,"lat":-11.9,"lon":-76.8,"loc":"PERU"},{"y":1907,"m":7.6,"lat":-13.2,"lon":-75.4,"loc":"PERU"},{"y":1908,"m":8.2,"lat":-14,"lon":-78,"loc":"OFF COAST"},{"y":1940,"m":8.2,"lat":-10.5,"lon":-77,"loc":"PERU"},{"y":1942,"m":8.2,"lat":-15,"lon":-76,"loc":"ICA, NAZCA"},{"y":1966,"m":8.1,"lat":-10.75,"lon":-78.64,"loc":"LIMA,HUACHO,HUAURA, CHANCAY,SUPE,SAN N"},{"y":1970,"m":7.9,"lat":-9.2,"lon":-78.8,"loc":"NORTHERN, PISCO, CHICLAYO"},{"y":1974,"m":8.1,"lat":-12.27,"lon":-77.79,"loc":"LIMA, CALLAO"},{"y":1996,"m":7.5,"lat":-9.59,"lon":-79.59,"loc":"NORTHERN:  CHIMBOTE, CALLAO"},{"y":1996,"m":7.7,"lat":-14.99,"lon":-75.67,"loc":"CHINCHA ALTA, ACARI, NAZCA, MARCONA"},{"y":2007,"m":8.0,"lat":-13.39,"lon":-76.6,"loc":"ICA, PISCO, LIMA"}];
-let MAP=null, lyRecent=null, lyHistoric=null;
+let MAP=null, lyRecent=null, lyHistoric=null, lyZones=null;
 function magColor(m){return m>=5.5?'#C8371E':m>=4.5?'#B87A1E':'#144A6E'}
 function initMap(){
   if(MAP||!window.L){if(!window.L)document.getElementById('mapNote').textContent='⚠ mapa no disponible sin conexión';return}
-  MAP=L.map('map',{scrollWheelZoom:false}).setView([-12.05,-76.6],6);
+  MAP=L.map('map',{scrollWheelZoom:false}).setView([-9.8,-75.2],5);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'© OpenStreetMap',maxZoom:12}).addTo(MAP);
   lyRecent=L.layerGroup().addTo(MAP);
   lyHistoric=L.layerGroup();
+  lyZones=L.layerGroup();
+  ZONES_DEF.forEach(z=>{
+    L.rectangle(z.box,{color:z.color,weight:1.5,dashArray:'6 4',fillColor:z.color,fillOpacity:.05})
+     .bindPopup(`<b>${z.nombre}</b>`).addTo(lyZones);
+  });
   HIST_GEO.forEach(h=>{
     L.circleMarker([h.lat,h.lon],{radius:6+(h.m-7.5)*7,color:'#C8371E',weight:1.5,dashArray:'4 3',fillOpacity:.06})
      .bindPopup(`<b>${h.y}</b> · M${h.m}<br>${h.loc}`).addTo(lyHistoric);
@@ -826,9 +897,10 @@ function renderMap(){
 }
 function refreshMapLayers(){
   if(!MAP)return;
-  const rec=document.getElementById('lyRec').checked, his=document.getElementById('lyHist').checked;
+  const rec=document.getElementById('lyRec').checked, his=document.getElementById('lyHist').checked, zon=document.getElementById('lyZon').checked;
   rec?MAP.addLayer(lyRecent):MAP.removeLayer(lyRecent);
   his?MAP.addLayer(lyHistoric):MAP.removeLayer(lyHistoric);
+  zon?MAP.addLayer(lyZones):MAP.removeLayer(lyZones);
 }
 
 /* ================= AUTO-ACTUALIZACIÓN ================= */
